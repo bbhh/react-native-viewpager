@@ -132,21 +132,6 @@ var ViewPager = React.createClass({
         this._autoPlayer = null;
       }
     }
-
-    if (nextProps.dataSource) {
-      var maxPage = nextProps.dataSource.getPageCount() - 1;
-      var constrainedPage = Math.max(0, Math.min(this.state.currentPage, maxPage));
-      this.setState({
-        currentPage: constrainedPage,
-      });
-
-      if (!nextProps.isLoop) {
-        this.state.scrollValue.setValue(constrainedPage > 0 ? 1 : 0);
-      }
-
-      this.childIndex = Math.min(this.childIndex, constrainedPage);
-    }
-
   },
 
   _startAutoPlay() {
@@ -159,7 +144,6 @@ var ViewPager = React.createClass({
   },
 
   goToPage(pageNumber) {
-
     var pageCount = this.props.dataSource.getPageCount();
     if (pageNumber < 0 || pageNumber >= pageCount) {
       console.error('Invalid page number: ', pageNumber);
@@ -185,17 +169,12 @@ var ViewPager = React.createClass({
 
     this.fling = true;
 
-    var nextChildIdx = 0;
-    if (pageNumber > 0 || this.props.isLoop) {
-      nextChildIdx = 1;
-    }
-
     this.props.animation(this.state.scrollValue, scrollStep, gs)
       .start((event) => {
         if (event.finished) {
           this.fling = false;
-          this.childIndex = nextChildIdx;
-          this.state.scrollValue.setValue(nextChildIdx);
+          this.childIndex = pageNumber;
+          this.state.scrollValue.setValue(pageNumber);
           this.setState({
             currentPage: pageNumber,
           });
@@ -250,28 +229,14 @@ var ViewPager = React.createClass({
     var viewWidth = this.state.viewWidth;
 
     if(pageIDs.length > 0 && viewWidth > 0) {
-      // left page
-      if (this.state.currentPage > 0) {
-        bodyComponents.push(this._getPage(this.state.currentPage - 1));
-        pagesNum++;
-        hasLeft = true;
-      } else if (this.state.currentPage == 0 && this.props.isLoop) {
-        bodyComponents.push(this._getPage(pageIDs.length - 1, true));
-        pagesNum++;
-        hasLeft = true;
+      var isLoop = false;
+      for (var i = 0; i < pageIDs.length; i++) {
+          isLoop = (this.state.currentPage == 0 && this.props.isLoop) || (this.state.currentPage == pageIDs.length - 1 && this.props.isLoop);
+          bodyComponents.push(this._getPage(i, isLoop));
+          pagesNum++;
       }
-
-      // center page
-      bodyComponents.push(this._getPage(this.state.currentPage));
-      pagesNum++;
-
-      // right page
-      if (this.state.currentPage < pageIDs.length - 1) {
-        bodyComponents.push(this._getPage(this.state.currentPage + 1));
-        pagesNum++;
-      } else if (this.state.currentPage == pageIDs.length - 1 && this.props.isLoop) {
-        bodyComponents.push(this._getPage(0, true));
-        pagesNum++;
+      if (this.state.currentPage > 0 || (this.state.currentPage == 0 && this.props.isLoop)) {
+          hasLeft = true;
       }
     }
 
